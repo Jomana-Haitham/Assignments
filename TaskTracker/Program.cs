@@ -1,61 +1,41 @@
-﻿using System;
-using System.Linq;
-using System.Threading.Tasks;
+var builder = WebApplication.CreateBuilder(args);
 
-namespace TaskTracker
+// Add services to the container.
+// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
+builder.Services.AddOpenApi();
+
+var app = builder.Build();
+
+// Configure the HTTP request pipeline.
+if (app.Environment.IsDevelopment())
 {
-    class Program
-    {
-        static async Task Main(string[] args)
-        {
-            Repository<TaskItem> repository = new Repository<TaskItem>();
+    app.MapOpenApi();
+}
 
-            repository.Add(new TaskItem(1, "Finish Assignment", Priority.High, TaskStatus.InProgress));
-            repository.Add(new TaskItem(2, "Buy Groceries", Priority.Low, TaskStatus.Pending));
-            repository.Add(new TaskItem(3, "Study C#", Priority.Critical, TaskStatus.Pending));
-            repository.Add(new TaskItem(4, "Workout", Priority.Medium, TaskStatus.Completed));
+app.UseHttpsRedirection();
 
-            var importantTasks = repository.FindAll(
-                t => t.Priority == Priority.High || t.Priority == Priority.Critical);
+var summaries = new[]
+{
+    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
+};
 
-            Console.WriteLine("High or Critical Tasks:");
+app.MapGet("/weatherforecast", () =>
+{
+    var forecast =  Enumerable.Range(1, 5).Select(index =>
+        new WeatherForecast
+        (
+            DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
+            Random.Shared.Next(-20, 55),
+            summaries[Random.Shared.Next(summaries.Length)]
+        ))
+        .ToArray();
+    return forecast;
+})
+.WithName("GetWeatherForecast");
 
-            foreach (var task in importantTasks)
-            {
-                Console.WriteLine(task.Title);
-            }
+app.Run();
 
-            Console.WriteLine();
-
-            var pendingTasks = repository
-                .GetAll()
-                .FilterByStatus(TaskStatus.Pending)
-                .SortByPriority();
-
-            Func<TaskItem, string> formatter = task =>
-                $"[{task.Priority}] {task.Title} - {task.Status}";
-
-            Console.WriteLine("Pending Tasks:");
-
-            foreach (var line in pendingTasks.Select(formatter))
-            {
-                Console.WriteLine(line);
-            }
-
-            Console.WriteLine();
-
-            await SaveTasksAsync(repository.GetAll());
-
-            Console.WriteLine("Finished.");
-        }
-
-        static async Task SaveTasksAsync(System.Collections.Generic.List<TaskItem> tasks)
-        {
-            Console.WriteLine("Saving tasks...");
-
-            await Task.Delay(2000);
-
-            Console.WriteLine($"{tasks.Count} tasks saved successfully.");
-        }
-    }
+record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
+{
+    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
 }
