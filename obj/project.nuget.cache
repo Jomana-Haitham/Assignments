@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "zQz2eV1wlYs=",
+  "dgSpecHash": "PI1N7OGGLvc=",
   "success": true,
   "projectFilePath": "/Users/jomanahaitham/TaskTracker/Task/Task.csproj",
   "expectedPackageFiles": [
@@ -29,6 +29,7 @@
     "/Users/jomanahaitham/.nuget/packages/microsoft.entityframeworkcore.design/10.0.10/microsoft.entityframeworkcore.design.10.0.10.nupkg.sha512",
     "/Users/jomanahaitham/.nuget/packages/microsoft.entityframeworkcore.relational/10.0.10/microsoft.entityframeworkcore.relational.10.0.10.nupkg.sha512",
     "/Users/jomanahaitham/.nuget/packages/microsoft.entityframeworkcore.sqlserver/10.0.10/microsoft.entityframeworkcore.sqlserver.10.0.10.nupkg.sha512",
+    "/Users/jomanahaitham/.nuget/packages/microsoft.entityframeworkcore.tools/10.0.10/microsoft.entityframeworkcore.tools.10.0.10.nupkg.sha512",
     "/Users/jomanahaitham/.nuget/packages/microsoft.extensions.apidescription.server/10.0.0/microsoft.extensions.apidescription.server.10.0.0.nupkg.sha512",
     "/Users/jomanahaitham/.nuget/packages/microsoft.extensions.dependencymodel/10.0.10/microsoft.extensions.dependencymodel.10.0.10.nupkg.sha512",
     "/Users/jomanahaitham/.nuget/packages/microsoft.identity.client/4.73.1/microsoft.identity.client.4.73.1.nupkg.sha512",

@@ -1,54 +1,36 @@
+using Microsoft.EntityFrameworkCore;
+using Task.Data;
 using Task.Models;
 
 namespace Task.Services;
 
 public class TaskService
 {
-    private readonly List<TaskItem> _tasks = new()
-    {
-        new TaskItem
-        {
-            Id = 1,
-            Title = "Meeting",
-            IsCompleted = false,
-            CreatedAt = DateTime.UtcNow.AddDays(-2)
-        },
-        new TaskItem
-        {
-            Id = 2,
-            Title = "Shopping",
-            IsCompleted = true,
-            CreatedAt = DateTime.UtcNow.AddDays(-1)
-        },
-        new TaskItem
-        {
-            Id = 3,
-            Title = "Gym",
-            IsCompleted = false,
-            CreatedAt = DateTime.UtcNow
-        }
-    };
+    private readonly AppDbContext _context;
 
-    public PagedResult<TaskItem> GetAll(TaskFilterParams filter)
+    public TaskService(AppDbContext context)
     {
-        var query = _tasks.AsQueryable();
+        _context = context;
+    }
 
-        // Search
+    public async Task<PagedResult<TaskItem>> GetAll(TaskFilterParams filter)
+    {
+        var query = _context.Tasks.AsQueryable();
+
+        
         if (!string.IsNullOrWhiteSpace(filter.Search))
         {
             query = query.Where(t =>
-                t.Title.Contains(filter.Search,
-                StringComparison.OrdinalIgnoreCase));
+                EF.Functions.ILike(t.Title, $"%{filter.Search}%"));
         }
 
-        // Filter
         if (filter.IsCompleted.HasValue)
         {
             query = query.Where(t =>
                 t.IsCompleted == filter.IsCompleted.Value);
         }
 
-        // Sorting
+      
         var sortFields = new Dictionary<string, Func<TaskItem, object>>
         {
             { "title", t => t.Title },
@@ -65,12 +47,12 @@ public class TaskService
             ? query.OrderByDescending(sortSelector).AsQueryable()
             : query.OrderBy(sortSelector).AsQueryable();
 
-        var totalCount = query.Count();
+        var totalCount = await query.CountAsync();
 
-        var items = query
+        var items = await query
             .Skip((filter.Page - 1) * filter.PageSize)
             .Take(filter.PageSize)
-            .ToList();
+            .ToListAsync();
 
         return new PagedResult<TaskItem>
         {
@@ -82,5 +64,51 @@ public class TaskService
             HasNextPage = filter.Page * filter.PageSize < totalCount,
             HasPreviousPage = filter.Page > 1
         };
+    }
+
+    public async Task<TaskItem?> GetById(int id)
+    {
+        return await _context.Tasks.FindAsync(id);
+    }
+
+    public async Task<TaskItem> Create(TaskItem task)
+    {
+        _context.Tasks.Add(task);
+        await _context.SaveChangesAsync();
+        return task;
+    }
+
+    public async Task<TaskItem?> Update(int id, TaskItem updatedTask)
+    {
+        var task = await _context.Tasks.FindAsync(id);
+
+        if (task == null)
+        {
+            return null;
+        }
+
+        task.Title = updatedTask.Title;
+        task.IsCompleted = updatedTask.IsCompleted;
+        task.CreatedAt = updatedTask.CreatedAt;
+        task.UserId = updatedTask.UserId;
+
+        await _context.SaveChangesAsync();
+
+        return task;
+    }
+
+    public async Task<bool> Delete(int id)
+    {
+        var task = await _context.Tasks.FindAsync(id);
+
+        if (task == null)
+        {
+            return false;
+        }
+
+        _context.Tasks.Remove(task);
+        await _context.SaveChangesAsync();
+
+        return true;
     }
 }

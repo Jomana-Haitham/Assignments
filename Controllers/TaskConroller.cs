@@ -15,22 +15,20 @@ public class TasksController : ControllerBase
         _taskService = taskService;
     }
 
-    
-/// <summary>
-/// Retrieves all tasks.
-/// </summary>
-/// <param name="filter">
-/// Filtering, sorting, and pagination parameters.
-/// </param>
-/// <response code="200">
-/// Returns a paginated list of tasks.
-/// </response>
-[ProducesResponseType(typeof(PagedResult<TaskItem>), StatusCodes.Status200OK)]
-
+    /// <summary>
+    /// Retrieves all tasks.
+    /// </summary>
+    /// <param name="filter">
+    /// Filtering, sorting, and pagination parameters.
+    /// </param>
+    /// <response code="200">
+    /// Returns a paginated list of tasks.
+    /// </response>
+    [ProducesResponseType(typeof(PagedResult<TaskItem>), StatusCodes.Status200OK)]
     [HttpGet]
-    public ActionResult<PagedResult<TaskItem>> GetAll([FromQuery] TaskFilterParams filter)
+    public async Task<ActionResult<PagedResult<TaskItem>>> GetAll([FromQuery] TaskFilterParams filter)
     {
-        var result = _taskService.GetAll(filter);
+        var result = await _taskService.GetAll(filter);
         return Ok(result);
     }
 }
