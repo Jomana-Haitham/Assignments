@@ -1,86 +1,76 @@
+using AutoMapper;
+using Task.DTOs;
 using Task.Models;
+using Task.Repositories;
 
 namespace Task.Services;
 
 public class TaskService
 {
-    private readonly List<TaskItem> _tasks = new()
+    private readonly ITaskRepository _repository;
+    private readonly IMapper _mapper;
+
+    public TaskService(
+        ITaskRepository repository,
+        IMapper mapper)
     {
-        new TaskItem
-        {
-            Id = 1,
-            Title = "Meeting",
-            IsCompleted = false,
-            CreatedAt = DateTime.UtcNow.AddDays(-2)
-        },
-        new TaskItem
-        {
-            Id = 2,
-            Title = "Shopping",
-            IsCompleted = true,
-            CreatedAt = DateTime.UtcNow.AddDays(-1)
-        },
-        new TaskItem
-        {
-            Id = 3,
-            Title = "Gym",
-            IsCompleted = false,
-            CreatedAt = DateTime.UtcNow
-        }
-    };
+        _repository = repository;
+        _mapper = mapper;
+    }
 
-    public PagedResult<TaskItem> GetAll(TaskFilterParams filter)
+    public async Task<IEnumerable<TaskItemDto>> GetAllAsync()
     {
-        var query = _tasks.AsQueryable();
+        var tasks = await _repository.GetAllAsync();
 
-        // Search
-        if (!string.IsNullOrWhiteSpace(filter.Search))
-        {
-            query = query.Where(t =>
-                t.Title.Contains(filter.Search,
-                StringComparison.OrdinalIgnoreCase));
-        }
+        return _mapper.Map<IEnumerable<TaskItemDto>>(tasks);
+    }
 
-        // Filter
-        if (filter.IsCompleted.HasValue)
-        {
-            query = query.Where(t =>
-                t.IsCompleted == filter.IsCompleted.Value);
-        }
+    public async Task<TaskItemDto?> GetByIdAsync(int id)
+    {
+        var task = await _repository.GetByIdAsync(id);
 
-        // Sorting
-        var sortFields = new Dictionary<string, Func<TaskItem, object>>
-        {
-            { "title", t => t.Title },
-            { "createdAt", t => t.CreatedAt },
-            { "isCompleted", t => t.IsCompleted }
-        };
+        if (task == null)
+            return null;
 
-        if (!sortFields.TryGetValue(filter.SortBy ?? "", out var sortSelector))
-        {
-            sortSelector = t => t.CreatedAt;
-        }
+        return _mapper.Map<TaskItemDto>(task);
+    }
 
-        query = filter.SortDescending
-            ? query.OrderByDescending(sortSelector).AsQueryable()
-            : query.OrderBy(sortSelector).AsQueryable();
+    public async Task<TaskItemDto> CreateAsync(CreateTaskRequest request)
+    {
+        var task = _mapper.Map<TaskItem>(request);
 
-        var totalCount = query.Count();
+        var createdTask = await _repository.CreateAsync(task);
 
-        var items = query
-            .Skip((filter.Page - 1) * filter.PageSize)
-            .Take(filter.PageSize)
-            .ToList();
+        return _mapper.Map<TaskItemDto>(createdTask);
+    }
 
-        return new PagedResult<TaskItem>
-        {
-            Items = items,
-            TotalCount = totalCount,
-            Page = filter.Page,
-            PageSize = filter.PageSize,
-            TotalPages = (int)Math.Ceiling((double)totalCount / filter.PageSize),
-            HasNextPage = filter.Page * filter.PageSize < totalCount,
-            HasPreviousPage = filter.Page > 1
-        };
+    public async Task<TaskItemDto?> UpdateAsync(
+        int id,
+        UpdateTaskRequest request)
+    {
+        var task = await _repository.GetByIdAsync(id);
+
+        if (task == null)
+            return null;
+
+        _mapper.Map(request, task);
+
+        task.Id = id;
+
+        var updated = await _repository.UpdateAsync(task);
+
+        if (!updated)
+            return null;
+
+        var updatedTask = await _repository.GetByIdAsync(id);
+
+        return updatedTask == null
+            ? null
+            : _mapper.Map<TaskItemDto>(updatedTask);
+    }
+
+    public async Task<bool> DeleteAsync(int id)
+    {
+        return await _repository.DeleteAsync(id);
     }
 }

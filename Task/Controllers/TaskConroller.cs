@@ -1,5 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
-using Task.Models;
+using Task.DTOs;
 using Task.Services;
 
 namespace Task.Controllers;
@@ -15,22 +15,58 @@ public class TasksController : ControllerBase
         _taskService = taskService;
     }
 
-    
-/// <summary>
-/// Retrieves all tasks.
-/// </summary>
-/// <param name="filter">
-/// Filtering, sorting, and pagination parameters.
-/// </param>
-/// <response code="200">
-/// Returns a paginated list of tasks.
-/// </response>
-[ProducesResponseType(typeof(PagedResult<TaskItem>), StatusCodes.Status200OK)]
-
     [HttpGet]
-    public ActionResult<PagedResult<TaskItem>> GetAll([FromQuery] TaskFilterParams filter)
+    public async Task<ActionResult<IEnumerable<TaskItemDto>>> GetAll()
     {
-        var result = _taskService.GetAll(filter);
-        return Ok(result);
+        var tasks = await _taskService.GetAllAsync();
+
+        return Ok(tasks);
+    }
+
+    [HttpGet("{id}")]
+    public async Task<ActionResult<TaskItemDto>> GetById(int id)
+    {
+        var task = await _taskService.GetByIdAsync(id);
+
+        if (task == null)
+            return NotFound();
+
+        return Ok(task);
+    }
+
+    [HttpPost]
+    public async Task<ActionResult<TaskItemDto>> Create(
+        CreateTaskRequest request)
+    {
+        var task = await _taskService.CreateAsync(request);
+
+        return CreatedAtAction(
+            nameof(GetById),
+            new { id = task.Id },
+            task);
+    }
+
+    [HttpPut("{id}")]
+    public async Task<ActionResult<TaskItemDto>> Update(
+        int id,
+        UpdateTaskRequest request)
+    {
+        var task = await _taskService.UpdateAsync(id, request);
+
+        if (task == null)
+            return NotFound();
+
+        return Ok(task);
+    }
+
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> Delete(int id)
+    {
+        var deleted = await _taskService.DeleteAsync(id);
+
+        if (!deleted)
+            return NotFound();
+
+        return NoContent();
     }
 }
